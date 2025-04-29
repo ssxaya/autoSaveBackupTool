@@ -98,10 +98,10 @@ A: 最新公告显示在程序界面顶部，点击"查看公告"按钮可以查
 
 作者: Yanxiao(ssxaya)
 
-如有问题或建议，请通过以下方式联系：
+如有问题或建议，请通过以下方式联系我：
 
 - 电子邮件: [yanxiaoxaya@outlook.com](mailto:yanxiaoxaya@outlook.com)
 - b站: [颜笑XAYA](https://space.bilibili.com/359322078)
 - GitHub: [autoSaveBackupTool](https://github.com/ssxaya/autoSaveBackupTool/)
 
-感谢您使用游戏存档备份工具！
+感谢使用AutoSaveBackupTool！
