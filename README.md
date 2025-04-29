@@ -1,0 +1,2 @@
+# autoSaveBackupTool
+AutoSaveBackupTool 是一款自动备份软件，你可以使用它主动或定时备份所需的文件和文件夹，并集中管理你的备份。
