@@ -36,11 +36,11 @@ class AutoSaveBackupTool:
         },
         {
             "content": r"dev-v0.5.2版本更新：兼容旧版本配置文件，启动时检测C:\Users\~\.game_backup_tool目录下的config.json文件",
-            "date": "2025-5-10"
+            "date": "2025-5-6"
         },
         {
             "content": "v0.5.3版本更新：修复旧版本配置迁移，包括历史记录与日志",
-            "date": "2025-5-15"
+            "date": "2025-5-6"
         }
     ]
     
