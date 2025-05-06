@@ -9,9 +9,9 @@ import threading
 import copy
 
 
-class GameSaveBackupTool:
+class AutoSaveBackupTool:
     
-    VERSION = "v0.4"
+    VERSION = "dev-v0.5.1"
     # 公告信息常量，直接存储在源代码中
     ANNOUNCEMENTS = [
         {
@@ -25,38 +25,49 @@ class GameSaveBackupTool:
         {
             "content": "v0.4版本更新：新增日志与日志详情，右键日志即可进行回溯操作。优化窗口位置",
             "date": "2025-04-29"
+        },
+        {
+            "content": "dev-v0.5版本更新：配置系统更新，数据配置文件(如历史、日志)保存在存档目录路径，基础设置保存用户目录",
+            "date": "2025-4-29"
+        },
+        {
+            "content": "dev-v0.5.1版本更新：公告更新，鼠标移动到公告栏会开始滚动，避免字数过长导致按钮位置问题",
+            "date": "2025-5-6"
         }
     ]
     
     def __init__(self, root):
         self.root = root
-        self.root.title(f"游戏存档备份工具 {self.VERSION} | by@Yanxiao")
+        self.root.title(f"ASBT · 自动存档备份工具 {self.VERSION} | by@Yanxiao")
         self.root.geometry("700x620")
         self.root.resizable(True, True)
         
         # 将窗口居中显示
         self.center_window(self.root)
 
-        # 配置文件路径
-        self.config_dir = os.path.join(os.path.expanduser("~"), ".game_backup_tool")
-        self.config_file = os.path.join(self.config_dir, "config.json")
-
-        # 创建配置目录
-        if not os.path.exists(self.config_dir):
-            os.makedirs(self.config_dir)
-
-        # 默认配置
-        self.config = {
+        # 默认全局配置
+        self.global_config = {
             "source_path": "",
             "is_directory": False,
             "backup_dir": "",
             "interval": 5,  # 默认备份间隔（分钟）
-            "backups": [],
-            "logs": []  # 添加日志记录列表
         }
-
-        # 加载配置
-        self.load_config()
+        
+        # 默认备份目录配置
+        self.backup_config = {
+            "backups": [],
+            "logs": []  # 日志记录列表
+        }
+        
+        # 合并配置用于兼容现有代码
+        self.config = {**self.global_config, **self.backup_config}
+        
+        # 配置文件路径
+        self.global_config_file = os.path.join(os.path.expanduser("~"), "autoSaveBackupTool_config.json")
+        self.backup_config_file = None
+        
+        # 加载全局配置
+        self.load_global_config()
 
         # 备份线程控制
         self.backup_thread = None
@@ -64,10 +75,83 @@ class GameSaveBackupTool:
 
         # 创建界面
         self.create_widgets()
+        
+        # 如果有备份目录，加载备份目录配置
+        if self.global_config["backup_dir"]:
+            self.load_backup_config()
 
         # 更新备份列表
         self.update_backup_list()
+    # 创建滚动文本
+    def create_scrolling_text(self, parent, announcement_var, width=500, speed=100, font=("微软雅黑", 10)):
+        canvas = tk.Canvas(parent, width=width, height=25, bg="white", highlightthickness=0)
+        text_id = canvas.create_text(0, 12, text=announcement_var.get(), anchor='w', font=font)
+        
+        # 滚动标志，默认为False（不滚动）
+        is_scrolling = False
+        scroll_id = None
+        # 标记文本是否需要滚动（文本宽度是否超出画布宽度）
+        needs_scrolling = False
+        
+        # 检查文本是否需要滚动
+        def check_if_needs_scrolling():
+            nonlocal needs_scrolling
+            # 获取文本的边界框
+            x1, _, x2, _ = canvas.bbox(text_id)
+            # 计算文本宽度
+            text_width = x2 - x1
+            # 如果文本宽度大于画布宽度，则需要滚动
+            needs_scrolling = text_width > width
+            return needs_scrolling
+        
+        def scroll():
+            nonlocal scroll_id
+            # 如果不在滚动状态，则不继续滚动
+            if not is_scrolling:
+                return
+                
+            # 更新文本内容，每次滚动时重新获取 announcement_var 的值
+            current_text = announcement_var.get()
+            canvas.itemconfig(text_id, text=current_text)
 
+            canvas.move(text_id, -10, 0)  # 滚动效果
+            x1, _, x2, _ = canvas.bbox(text_id)  # 获取文本位置
+            if x2 < 0:  # 当文本完全滚动出视野时，重新开始
+                canvas.move(text_id, canvas.winfo_width() - x1, 0)
+            scroll_id = canvas.after(speed, scroll)  # 重复滚动
+        
+        # 重置文本位置到开头
+        def reset_text_position():
+            x1, _, _, _ = canvas.bbox(text_id)  # 获取文本位置
+            if x1 < 0:  # 如果文本已经滚动，则重置位置
+                canvas.coords(text_id, 0, 12)  # 重置到初始位置
+        
+        # 鼠标进入事件处理函数
+        def on_enter(event):
+            nonlocal is_scrolling
+            # 只有当文本需要滚动时才启用滚动功能
+            if check_if_needs_scrolling():
+                is_scrolling = True
+                scroll()  # 开始滚动
+        
+        # 鼠标离开事件处理函数
+        def on_leave(event):
+            nonlocal is_scrolling, scroll_id
+            is_scrolling = False
+            if scroll_id:
+                canvas.after_cancel(scroll_id)  # 取消滚动定时器
+                scroll_id = None
+            reset_text_position()  # 重置文本位置到开头
+        
+        # 绑定鼠标进入和离开事件
+        canvas.bind("<Enter>", on_enter)
+        canvas.bind("<Leave>", on_leave)
+        
+        # 初始检查文本是否需要滚动
+        check_if_needs_scrolling()
+        
+        return canvas
+    
     def create_widgets(self):
         # 创建主框架
         main_frame = ttk.Frame(self.root, padding="10")
@@ -79,9 +163,12 @@ class GameSaveBackupTool:
         
         # 公告标签和内容
         self.announcement_var = tk.StringVar()
-        self.announcement_var.set("暂无公告")
-        announcement_label = ttk.Label(announcement_frame, textvariable=self.announcement_var, anchor=tk.W)
-        announcement_label.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5, pady=2)
+        # 先设置公告内容，确保在创建滚动文本前已有内容
+        self.update_announcement_display()
+        announcement = self.create_scrolling_text(announcement_frame, self.announcement_var, width=570)
+        announcement.pack(side=tk.LEFT, padx=5, pady=2)
+        # announcement_label = ttk.Label(announcement_frame, textvariable=self.announcement_var, anchor=tk.W)
+        # announcement_label.pack(side=tk.LEFT, fill=tk.X, expand=False, padx=5, pady=2)
         
         # 公告按钮
         ttk.Button(announcement_frame, text="查看公告", command=self.show_announcements, width=10).pack(side=tk.RIGHT, padx=5, pady=2)
@@ -156,7 +243,7 @@ class GameSaveBackupTool:
         status_bar = ttk.Label(main_frame, textvariable=self.status_var, relief=tk.SUNKEN, anchor=tk.W)
         status_bar.pack(fill=tk.X, pady=5)
         
-        # 更新公告显示
+        # 更新公告显示 - 确保在界面创建后立即显示最新公告
         self.update_announcement_display()
 
     def select_source(self, is_directory=False):
@@ -168,18 +255,89 @@ class GameSaveBackupTool:
         if path:
             self.source_entry.delete(0, tk.END)
             self.source_entry.insert(0, path)
+            
+            # 更新全局配置
+            self.global_config["source_path"] = path
+            self.global_config["is_directory"] = is_directory
+            
+            # 更新合并配置以保持兼容性
             self.config["source_path"] = path
             self.config["is_directory"] = is_directory
-            self.save_config()
+            
+            # 保存全局配置
+            self.save_global_config()
 
     def select_backup_dir(self):
         directory = filedialog.askdirectory(title="选择备份目录")
         if directory:
+            # 更新UI
             self.backup_dir_entry.delete(0, tk.END)
             self.backup_dir_entry.insert(0, directory)
+            
+            # 保存当前备份配置（如果有）
+            if self.global_config["backup_dir"] and os.path.exists(self.global_config["backup_dir"]):
+                self.save_backup_config()
+            
+            # 更新全局配置中的备份目录
+            self.global_config["backup_dir"] = directory
             self.config["backup_dir"] = directory
-            self.save_config()
+            
+            # 更新备份配置文件路径
+            self.backup_config_file = os.path.join(directory, "config.json")
+            
+            # 如果新目录中已有配置文件，则加载该配置
+            if os.path.exists(self.backup_config_file):
+                self.load_backup_config()
+                messagebox.showinfo("提示", f"已加载备份目录中的配置文件")
+            else:
+                # 如果新目录中没有配置文件，则创建一个新的空白配置
+                # 重置备份配置为初始空白状态
+                self.backup_config = {
+                    "backups": [],
+                    "logs": []
+                }
+                # 更新合并配置
+                self.config.update(self.backup_config)
+                # 保存新的空白配置到新目录
+                self.save_backup_config()
+                messagebox.showinfo("提示", f"已为新备份目录创建空白配置文件")
+            
+            # 保存全局配置
+            self.save_global_config()
+                
+            # 更新备份列表
             self.update_backup_list()
+            
+            # 如果日志窗口已打开，刷新日志显示
+            if hasattr(self, 'log_tree') and self.log_tree.winfo_exists():
+                # 清空当前日志列表
+                for item in self.log_tree.get_children():
+                    self.log_tree.delete(item)
+                
+                # 重新添加日志记录到列表
+                for log in reversed(self.backup_config["logs"]):
+                    action_map = {
+                        "backup": "备份",
+                        "restore": "还原",
+                        "delete": "删除",
+                        "restore_deleted": "恢复删除的备份",
+                        "rollback": "回溯操作"
+                    }
+                    action_text = action_map.get(log["action"], log["action"])
+                    
+                    backup_info = log["backup_info"]
+                    is_directory = backup_info.get("is_directory", False)
+                    type_indicator = "[文件夹]" if is_directory else "[文件]"
+                    filename = os.path.basename(backup_info["backup_path"])
+                    display_name = f"{type_indicator} {filename}"
+                    
+                    self.log_tree.insert("", tk.END, values=(log["date"], action_text, display_name),
+                                        tags=(log["timestamp"],))
+                
+                # 更新状态栏
+                self.status_var.set(f"已切换备份目录并刷新日志显示")
+            else:
+                self.status_var.set(f"已切换备份目录并刷新备份列表")
 
     def toggle_auto_backup(self):
         if self.is_running:
@@ -197,8 +355,12 @@ class GameSaveBackupTool:
             # 更新备份间隔
             try:
                 interval = int(self.interval_spinbox.get())
+                # 更新全局配置
+                self.global_config["interval"] = interval
+                # 更新合并配置以保持兼容性
                 self.config["interval"] = interval
-                self.save_config()
+                # 保存全局配置
+                self.save_global_config()
             except ValueError:
                 messagebox.showerror("错误", "请输入有效的备份间隔")
                 return
@@ -214,7 +376,7 @@ class GameSaveBackupTool:
             try:
                 self.perform_backup()
                 # 转换间隔为秒
-                interval_seconds = self.config["interval"] * 60
+                interval_seconds = self.global_config["interval"] * 60
                 # 每秒检查一次是否需要停止
                 for _ in range(interval_seconds):
                     if not self.is_running:
@@ -237,9 +399,9 @@ class GameSaveBackupTool:
             messagebox.showerror("错误", f"备份失败: {str(e)}")
 
     def perform_backup(self):
-        source_path = self.config["source_path"]
-        backup_dir = self.config["backup_dir"]
-        is_directory = self.config["is_directory"]
+        source_path = self.global_config["source_path"]
+        backup_dir = self.global_config["backup_dir"]
+        is_directory = self.global_config["is_directory"]
 
         # 确保目录存在
         if not os.path.exists(backup_dir):
@@ -267,7 +429,10 @@ class GameSaveBackupTool:
             "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
 
-        self.config["backups"].append(backup_info)
+        # 添加到备份配置中的备份列表
+        self.backup_config["backups"].append(backup_info)
+        # 更新合并配置以保持兼容性
+        self.config["backups"] = self.backup_config["backups"]
         
         # 添加日志记录
         self.add_log("backup", backup_info)
@@ -341,7 +506,7 @@ class GameSaveBackupTool:
             self.backup_tree.delete(item)
 
         # 添加备份记录到列表
-        for backup in reversed(self.config["backups"]):
+        for backup in reversed(self.backup_config["backups"]):
             if os.path.exists(backup["backup_path"]):
                 # 添加类型标识
                 is_directory = backup.get("is_directory", False)
@@ -370,7 +535,7 @@ class GameSaveBackupTool:
 
         # 查找对应的备份信息
         backup_info = None
-        for backup in self.config["backups"]:
+        for backup in self.backup_config["backups"]:
             if backup["timestamp"] == timestamp:
                 backup_info = backup
                 break
@@ -425,7 +590,7 @@ class GameSaveBackupTool:
 
         # 查找对应的备份信息
         backup_index = -1
-        for i, backup in enumerate(self.config["backups"]):
+        for i, backup in enumerate(self.backup_config["backups"]):
             if backup["timestamp"] == timestamp:
                 backup_index = i
                 break
@@ -440,7 +605,7 @@ class GameSaveBackupTool:
             return
 
         try:
-            backup_info = self.config["backups"][backup_index]
+            backup_info = self.backup_config["backups"][backup_index]
             is_directory = backup_info.get("is_directory", False)
 
             # 删除备份文件或文件夹
@@ -451,8 +616,11 @@ class GameSaveBackupTool:
                     os.remove(backup_info["backup_path"])
 
             # 从配置中移除
-            backup_info = self.config["backups"].pop(backup_index)
-            self.save_config()
+            backup_info = self.backup_config["backups"].pop(backup_index)
+            # 更新合并配置以保持兼容性
+            self.config["backups"] = self.backup_config["backups"]
+            # 保存备份目录配置
+            self.save_backup_config()
 
             # 添加日志记录
             self.add_log("delete", backup_info)
@@ -479,42 +647,113 @@ class GameSaveBackupTool:
             messagebox.showerror("错误", "请选择备份目录")
             return False
 
-        # 更新配置
+        # 更新全局配置
+        self.global_config["source_path"] = source_path
+        self.global_config["backup_dir"] = backup_dir
+        # 检测是否为目录
+        self.global_config["is_directory"] = os.path.isdir(source_path)
+        
+        # 更新合并配置以保持兼容性
         self.config["source_path"] = source_path
         self.config["backup_dir"] = backup_dir
-        # 检测是否为目录
-        self.config["is_directory"] = os.path.isdir(source_path)
+        self.config["is_directory"] = self.global_config["is_directory"]
 
         try:
             interval = int(self.interval_spinbox.get())
             if interval <= 0:
                 messagebox.showerror("错误", "备份间隔必须大于0")
                 return False
+            # 更新全局配置和合并配置
+            self.global_config["interval"] = interval
             self.config["interval"] = interval
         except ValueError:
             messagebox.showerror("错误", "请输入有效的备份间隔")
             return False
 
-        self.save_config()
+        # 保存全局配置
+        self.save_global_config()
         return True
 
-    def load_config(self):
-        if os.path.exists(self.config_file):
+    def load_global_config(self):
+        """加载全局配置文件"""
+        if os.path.exists(self.global_config_file):
             try:
-                with open(self.config_file, 'r', encoding='utf-8') as f:
+                with open(self.global_config_file, 'r', encoding='utf-8') as f:
                     loaded_config = json.load(f)
-                    # 更新配置，保留默认值
+                    # 更新全局配置，保留默认值
                     for key, value in loaded_config.items():
-                        self.config[key] = value
+                        if key in self.global_config:
+                            self.global_config[key] = value
+                    
+                    # 更新合并配置
+                    self.config.update(self.global_config)
             except Exception as e:
-                messagebox.showerror("错误", f"加载配置失败: {str(e)}")
+                messagebox.showerror("错误", f"加载全局配置失败: {str(e)}")
+    
+    def save_global_config(self):
+        """保存全局配置文件"""
+        try:
+            # 确保目录存在
+            os.makedirs(os.path.dirname(self.global_config_file), exist_ok=True)
+            with open(self.global_config_file, 'w', encoding='utf-8') as f:
+                json.dump(self.global_config, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            messagebox.showerror("错误", f"保存全局配置失败: {str(e)}")
+    
+    def load_backup_config(self):
+        """加载备份目录特定的配置文件"""
+        if not self.global_config["backup_dir"]:
+            return
+            
+        self.backup_config_file = os.path.join(self.global_config["backup_dir"], "config.json")
+        
+        if os.path.exists(self.backup_config_file):
+            try:
+                with open(self.backup_config_file, 'r', encoding='utf-8') as f:
+                    loaded_config = json.load(f)
+                    # 更新备份配置
+                    for key, value in loaded_config.items():
+                        if key in self.backup_config:
+                            self.backup_config[key] = value
+                    
+                    # 更新合并配置
+                    self.config.update(self.backup_config)
+            except Exception as e:
+                messagebox.showerror("错误", f"加载备份目录配置失败: {str(e)}")
+    
+    def save_backup_config(self):
+        """保存备份目录特定的配置文件"""
+        if not self.global_config["backup_dir"] or not os.path.exists(self.global_config["backup_dir"]):
+            return
+            
+        if not self.backup_config_file:
+            self.backup_config_file = os.path.join(self.global_config["backup_dir"], "config.json")
+            
+        try:
+            with open(self.backup_config_file, 'w', encoding='utf-8') as f:
+                json.dump(self.backup_config, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            messagebox.showerror("错误", f"保存备份目录配置失败: {str(e)}")
+    
+    def load_config(self):
+        """兼容旧版本的配置加载方法"""
+        self.load_global_config()
+        self.load_backup_config()
 
     def save_config(self):
-        try:
-            with open(self.config_file, 'w', encoding='utf-8') as f:
-                json.dump(self.config, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            messagebox.showerror("错误", f"保存配置失败: {str(e)}")
+        """兼容旧版本的配置保存方法"""
+        # 从合并配置中更新全局配置和备份配置
+        for key in self.global_config:
+            if key in self.config:
+                self.global_config[key] = self.config[key]
+                
+        for key in self.backup_config:
+            if key in self.config:
+                self.backup_config[key] = self.config[key]
+        
+        # 保存配置
+        self.save_global_config()
+        self.save_backup_config()
             
     def add_log(self, action_type, backup_info):
         """添加日志记录
@@ -530,8 +769,12 @@ class GameSaveBackupTool:
             "backup_info": copy.deepcopy(backup_info)
         }
         
-        self.config["logs"].append(log_entry)
-        self.save_config()
+        # 添加到备份配置中的日志列表
+        self.backup_config["logs"].append(log_entry)
+        # 更新合并配置以保持兼容性
+        self.config["logs"] = self.backup_config["logs"]
+        # 保存备份目录配置
+        self.save_backup_config()
     
     def show_logs(self):
         """显示日志窗口"""
@@ -565,7 +808,7 @@ class GameSaveBackupTool:
         self.log_tree.configure(yscrollcommand=scrollbar.set)
         
         # 添加日志记录到列表
-        for log in reversed(self.config["logs"]):
+        for log in reversed(self.backup_config["logs"]):
             action_map = {
                 "backup": "备份",
                 "restore": "还原",
@@ -879,5 +1122,5 @@ class GameSaveBackupTool:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = GameSaveBackupTool(root)
+    app = AutoSaveBackupTool(root)
     root.mainloop()
