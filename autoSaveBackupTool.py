@@ -11,7 +11,7 @@ import copy
 
 class AutoSaveBackupTool:
     
-    VERSION = "dev-v0.5.1"
+    VERSION = "v0.5.3"
     # 公告信息常量，直接存储在源代码中
     ANNOUNCEMENTS = [
         {
@@ -33,6 +33,14 @@ class AutoSaveBackupTool:
         {
             "content": "dev-v0.5.1版本更新：公告更新，鼠标移动到公告栏会开始滚动，避免字数过长导致按钮位置问题",
             "date": "2025-5-6"
+        },
+        {
+            "content": r"dev-v0.5.2版本更新：兼容旧版本配置文件，启动时检测C:\Users\~\.game_backup_tool目录下的config.json文件",
+            "date": "2025-5-10"
+        },
+        {
+            "content": "v0.5.3版本更新：修复旧版本配置迁移，包括历史记录与日志",
+            "date": "2025-5-15"
         }
     ]
     
@@ -65,6 +73,12 @@ class AutoSaveBackupTool:
         # 配置文件路径
         self.global_config_file = os.path.join(os.path.expanduser("~"), "autoSaveBackupTool_config.json")
         self.backup_config_file = None
+        
+        # 旧版本配置文件路径
+        self.old_config_file = os.path.join(os.path.expanduser("~"), ".game_backup_tool", "config.json")
+        
+        # 检查旧版本配置文件
+        self.check_old_config()
         
         # 加载全局配置
         self.load_global_config()
@@ -674,6 +688,123 @@ class AutoSaveBackupTool:
         self.save_global_config()
         return True
 
+    def check_old_config(self):
+        """检查旧版本配置文件是否存在，并提示用户选择保留哪个配置文件"""
+        if os.path.exists(self.old_config_file) and os.path.isfile(self.old_config_file):
+            try:
+                # 读取旧配置文件
+                with open(self.old_config_file, 'r', encoding='utf-8') as f:
+                    old_config = json.load(f)
+                
+                # 创建自定义对话框
+                dialog = tk.Toplevel(self.root)
+                dialog.title("旧版本config兼容")
+                dialog.geometry("400x250")
+                dialog.resizable(False, False)
+                dialog.transient(self.root)  # 设置为主窗口的子窗口
+                dialog.grab_set()  # 模态窗口
+                
+                # 将对话框居中显示
+                self.center_window(dialog)
+                
+                # 创建内容框架
+                content_frame = ttk.Frame(dialog, padding="20")
+                content_frame.pack(fill=tk.BOTH, expand=True)
+                
+                # 提示信息
+                ttk.Label(content_frame, text="检测到旧版本配置文件，请选择操作：", 
+                          font=("微软雅黑", 10)).pack(pady=(0, 10),anchor="w")
+                
+                # 选项框架
+                options_frame = ttk.Frame(content_frame)
+                options_frame.pack(fill=tk.X, pady=5)
+                
+                # 配置选择
+                config_var = tk.StringVar(value="old")
+                ttk.Radiobutton(options_frame, text="使用旧版本配置", variable=config_var, 
+                                value="old").pack(anchor=tk.W, pady=2)
+                ttk.Radiobutton(options_frame, text="使用当前配置", variable=config_var, 
+                                value="current").pack(anchor=tk.W, pady=2)
+                
+                # 历史记录选项
+                history_var = tk.BooleanVar(value=True)
+                ttk.Checkbutton(options_frame, text="迁移历史记录和日志到备份目录", 
+                               variable=history_var).pack(anchor=tk.W, pady=(10, 5))
+                
+                # 删除选项
+                delete_var = tk.BooleanVar(value=True)
+                ttk.Checkbutton(options_frame, text="删除旧版本配置文件", 
+                               variable=delete_var).pack(anchor=tk.W, pady=(5, 5))
+                
+                # 按钮框架
+                button_frame = ttk.Frame(content_frame)
+                button_frame.pack(fill=tk.X, pady=(15, 0))
+                
+                # 结果变量
+                result = {"config": None, "history": None, "delete": None}
+                
+                # 确认按钮回调
+                def on_confirm():
+                    result["config"] = config_var.get()
+                    result["history"] = history_var.get()
+                    result["delete"] = delete_var.get()
+                    dialog.destroy()
+                
+                # 取消按钮回调
+                def on_cancel():
+                    dialog.destroy()
+                
+                # 添加按钮
+                ttk.Button(button_frame, text="取消", command=on_cancel, width=10).pack(side=tk.RIGHT, padx=5)
+                ttk.Button(button_frame, text="确认", command=on_confirm, width=10).pack(side=tk.RIGHT, padx=5)
+                
+                
+                # 等待对话框关闭
+                self.root.wait_window(dialog)
+                
+                # 处理用户选择
+                if "config" in result and result["config"] is not None:
+                    if result["config"] == "old":  # 用户选择使用旧版本配置
+                        # 更新全局配置（仅包括全局设置部分）
+                        for key, value in old_config.items():
+                            if key in self.global_config:
+                                self.global_config[key] = value
+                        
+                        # 保存全局配置
+                        self.save_global_config()
+                        
+                        # 如果用户选择迁移历史记录和日志，并且有备份目录
+                        if result["history"] and self.global_config["backup_dir"] and os.path.exists(self.global_config["backup_dir"]):
+                            # 更新备份配置文件路径
+                            self.backup_config_file = os.path.join(self.global_config["backup_dir"], "config.json")
+                            
+                            # 迁移历史记录和日志
+                            if "backups" in old_config and old_config["backups"]:
+                                self.backup_config["backups"] = old_config["backups"]
+                                self.config["backups"] = old_config["backups"]
+                            
+                            if "logs" in old_config and old_config["logs"]:
+                                self.backup_config["logs"] = old_config["logs"]
+                                self.config["logs"] = old_config["logs"]
+                            
+                            # 保存备份配置
+                            self.save_backup_config()
+                            messagebox.showinfo("配置迁移", "已成功导入旧版本配置并迁移历史记录和日志到备份目录")
+                        else:
+                            messagebox.showinfo("配置迁移", "已成功导入旧版本配置")
+                    
+                    # 根据用户选择删除旧配置文件
+                    if result["delete"]:
+                        # 删除旧配置文件及其目录
+                        os.remove(self.old_config_file)
+                        old_config_dir = os.path.dirname(self.old_config_file)
+                        if os.path.exists(old_config_dir) and len(os.listdir(old_config_dir)) == 0:
+                            os.rmdir(old_config_dir)
+                        messagebox.showinfo("配置清理", "已删除旧版本配置文件")
+            
+            except Exception as e:
+                messagebox.showerror("错误", f"处理旧版本配置文件时出错: {str(e)}")
+    
     def load_global_config(self):
         """加载全局配置文件"""
         if os.path.exists(self.global_config_file):
