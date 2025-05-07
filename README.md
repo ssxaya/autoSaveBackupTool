@@ -1,9 +1,9 @@
-# 关于
+# 关于ASBT
 
 ## 简介
 
 文件存档备份工具(AutoSaveBackupTool)是一款用于自动备份游戏存档或其他重要文件的小工具。它能够定时或手动创建备份，便于在文件损坏或丢失时进行恢复。
-> 在创作之初，AutoSaveBackupTool是为了服务于部分不具备自动存档功能的单机游戏，目前亦适用于各种日常文件备份场景。
+> 在创作之初，ASBT是为了服务于部分不具备自动存档功能的单机游戏，目前亦适用于各种日常文件备份场景。
 
 当前版本：v0.5.3
 
@@ -109,4 +109,4 @@ A: 最新公告显示在程序界面顶部，点击"查看公告"按钮可以查
 - b站: [颜笑XAYA](https://space.bilibili.com/359322078)
 - GitHub: [autoSaveBackupTool](https://github.com/ssxaya/autoSaveBackupTool/)
 
-感谢使用AutoSaveBackupTool！
+感谢使用ASBT！
