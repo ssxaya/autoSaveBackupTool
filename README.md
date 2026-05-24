@@ -1,116 +1,57 @@
-# 关于ASBT
+# React + TypeScript + Vite
 
-## 简介
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-文件存档备份工具(AutoSaveBackupTool)是一款用于自动备份游戏存档或其他重要文件的小工具。它能够定时或手动创建备份，便于在文件损坏或丢失时进行恢复。
-> 在创作之初，ASBT是为了服务于部分不具备自动存档功能的单机游戏，目前亦适用于各种日常文件备份场景。
+Currently, two official plugins are available:
 
-当前版本：v0.6.2
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## 功能
+## Expanding the ESLint configuration
 
-- 支持单个文件或整个文件夹的备份
-- 定时自动备份功能
-- 手动备份功能
-- 备份历史记录查看
-- 备份还原与删除功能
-- 详细的日志记录
-- 日志回溯功能，可以恢复已删除的备份
-- 兼容旧版本配置文件
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-## 使用
+```js
+export default tseslint.config({
+  extends: [
+    // Remove ...tseslint.configs.recommended and replace with this
+    ...tseslint.configs.recommendedTypeChecked,
+    // Alternatively, use this for stricter rules
+    ...tseslint.configs.strictTypeChecked,
+    // Optionally, add this for stylistic rules
+    ...tseslint.configs.stylisticTypeChecked,
+  ],
+  languageOptions: {
+    // other options...
+    parserOptions: {
+      project: ['./tsconfig.node.json', './tsconfig.app.json'],
+      tsconfigRootDir: import.meta.dirname,
+    },
+  },
+})
+```
 
-### 基本设置
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-1. **选择源文件/文件夹**：
-   - 点击"选择文件"按钮选择需要备份的单个文件
-   - 点击"选择文件夹"按钮选择需要备份的整个文件夹
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-2. **选择备份目录**：
-   - 点击"浏览"按钮选择您希望存储备份的目录
-   - 点击"历史备份目录"按钮打开历史备份目录列表
-
-3. **设置备份间隔**：
-   - 在"备份间隔(分钟)"中设置自动备份的时间间隔
-
-### 执行备份
-
-1. **手动备份**：
-   - 点击"立即备份"按钮进行一次手动备份
-
-2. **自动备份**：
-   - 点击"开始自动备份"按钮开始定时自动备份
-   - 再次点击该按钮可停止自动备份
-
-### 备份管理
-
-1. **查看备份历史**：
-   - 主窗口中的备份列表显示了所有备份的历史记录
-   - 列表项前缀 `[文件]` 或 `[文件夹]` 表示备份类型
-
-2. **还原备份**：
-   - 在备份列表中右键点击某个备份
-   - 选择"还原"菜单项进行还原操作
-   - 系统会在还原前自动创建当前状态的备份
-
-3. **删除备份**：
-   - 在备份列表中右键点击某个备份
-   - 选择"删除"菜单项删除该备份
-
-### 日志功能
-
-1. **查看日志**：
-   - 点击主窗口底部的"查看日志"按钮打开日志窗口
-   - 日志记录包含所有备份、还原、删除等操作的历史
-
-2. **日志详情**：
-   - 在日志列表中右键点击某个日志记录
-   - 选择"状态"菜单项查看该操作的详细信息，包括文件路径和内容预览
-
-3. **日志回溯**：
-   - 在日志列表中右键点击某个日志记录
-   - 选择"回溯"菜单项执行回溯操作
-   - 对于删除操作，可以恢复被删除的备份
-   - 对于备份或还原操作，可以将文件恢复到该操作时的状态
-
-## 常见问题FAQ
-
-### Q: 备份文件保存在什么位置？
-A: 备份文件保存在您选择的备份目录中，文件名格式为"原文件名_时间戳"。
-
-### Q: 配置信息保存在哪里？
-A: 旧版本配置信息保存在用户主目录下的 `.game_backup_tool/config.json` 文件中;
-   新版本配置信息保存在用户主目录下的 `autoSaveBackupTool_config.json` 文件中。
-
-### Q: 如何修改已设置的源文件或备份目录？
-A: 直接在界面上修改对应的输入框内容，修改后的设置会自动保存。
-
-### Q: 自动备份会占用很多磁盘空间吗？
-A: 这取决于您备份的文件大小和备份频率。建议定期清理不需要的旧备份以节省空间。
-
-### Q: 如何查看程序的最新公告？
-A: 最新公告显示在程序界面顶部，点击"查看公告"按钮可以查看所有历史公告。
-
-## 历史
-
-- **v0.6.2** (2025-5-8): 状态栏状态数量更新、备份文件名时间戳精度提升至毫秒，修复已知bug
-- **v0.6.1** (2025-5-7): 右键备份列表可以还原与删除
-- **v0.6** (2025-5-7): 新增历史备份目录列表进行管理（右键有更多选项）
-- **v0.5.3** (2025-5-6): 修复旧版本配置迁移，包括历史记录与日志
-- **dev-v0.5.2** (2025-5-6): 兼容旧版本配置文件
-- **dev-v0.5.1** (2025-5-6): 重构配置管理逻辑并优化公告滚动功能
-- **v0.4** (2025-04-29): 新增日志与日志详情，支持右键日志进行回溯操作，优化窗口位置
-- **v0.2** (2025-04-28): 支持文件夹备份，可以备份整个游戏存档目录
-- **v0.1** (2025-04-20): 初版发布，基本的文件备份与还原功能
-
-## 联系
-
-作者: Yanxiao(ssxaya)
-
-如有问题或建议，请通过以下方式联系我：
-
-- 电子邮件: [yanxiaoxaya@outlook.com](mailto:yanxiaoxaya@outlook.com)
-- b站: [颜笑XAYA](https://space.bilibili.com/359322078)
-- GitHub: [autoSaveBackupTool](https://github.com/ssxaya/autoSaveBackupTool/)
-
-感谢使用ASBT！
+export default tseslint.config({
+  extends: [
+    // other configs...
+    // Enable lint rules for React
+    reactX.configs['recommended-typescript'],
+    // Enable lint rules for React DOM
+    reactDom.configs.recommended,
+  ],
+  languageOptions: {
+    // other options...
+    parserOptions: {
+      project: ['./tsconfig.node.json', './tsconfig.app.json'],
+      tsconfigRootDir: import.meta.dirname,
+    },
+  },
+})
+```

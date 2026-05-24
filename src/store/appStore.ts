@@ -1,0 +1,201 @@
+import { create } from 'zustand';
+import { GlobalConfig, BackupInfo, LogEntry, Announcement } from '../../shared/types';
+
+interface AppState {
+  config: GlobalConfig;
+  backups: BackupInfo[];
+  logs: LogEntry[];
+  announcements: Announcement[];
+  isAutoBackupRunning: boolean;
+  status: string;
+  setConfig: (config: Partial<GlobalConfig>) => void;
+  loadConfig: () => Promise<void>;
+  saveConfig: () => Promise<void>;
+  loadBackups: () => Promise<void>;
+  loadLogs: () => Promise<void>;
+  loadAnnouncements: () => Promise<void>;
+  performBackup: () => Promise<void>;
+  restoreBackup: (backup: BackupInfo) => Promise<void>;
+  deleteBackup: (backup: BackupInfo) => Promise<void>;
+  toggleAutoBackup: () => void;
+  setStatus: (status: string) => void;
+}
+
+export const useAppStore = create<AppState>((set, get) => ({
+  config: {
+    sourcePath: '',
+    isDirectory: false,
+    backupDir: '',
+    backupDirs: [],
+    interval: 5
+  },
+  backups: [],
+  logs: [],
+  announcements: [],
+  isAutoBackupRunning: false,
+  status: '准备就绪',
+
+  setConfig: (config) => set((state) => ({ config: { ...state.config, ...config } })),
+
+  loadConfig: async () => {
+    try {
+      const res = await fetch('/api/config');
+      const data = await res.json();
+      set({ config: data });
+    } catch (error) {
+      console.error('Failed to load config:', error);
+    }
+  },
+
+  saveConfig: async () => {
+    try {
+      const { config } = get();
+      await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      });
+    } catch (error) {
+      console.error('Failed to save config:', error);
+    }
+  },
+
+  loadBackups: async () => {
+    try {
+      const { config } = get();
+      if (!config.backupDir) {
+        set({ backups: [] });
+        return;
+      }
+      const res = await fetch(`/api/files/backups?backupDir=${encodeURIComponent(config.backupDir)}`);
+      const data = await res.json();
+      set({ backups: data.backups.reverse() });
+    } catch (error) {
+      console.error('Failed to load backups:', error);
+    }
+  },
+
+  loadLogs: async () => {
+    try {
+      const { config } = get();
+      if (!config.backupDir) {
+        set({ logs: [] });
+        return;
+      }
+      const res = await fetch(`/api/files/logs?backupDir=${encodeURIComponent(config.backupDir)}`);
+      const data = await res.json();
+      set({ logs: data.logs.reverse() });
+    } catch (error) {
+      console.error('Failed to load logs:', error);
+    }
+  },
+
+  loadAnnouncements: async () => {
+    try {
+      const res = await fetch('/api/config/announcements');
+      const data = await res.json();
+      set({ announcements: data });
+    } catch (error) {
+      console.error('Failed to load announcements:', error);
+    }
+  },
+
+  performBackup: async () => {
+    try {
+      const { config } = get();
+      if (!config.sourcePath || !config.backupDir) {
+        set({ status: '请先选择源文件和备份目录' });
+        return;
+      }
+      set({ status: '正在备份...' });
+      const res = await fetch('/api/files/backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourcePath: config.sourcePath,
+          backupDir: config.backupDir,
+          isDirectory: config.isDirectory
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        set({ status: '备份成功！' });
+        await get().loadBackups();
+        await get().loadLogs();
+        // Update config with new backupDir if needed
+        if (!config.backupDirs.includes(config.backupDir)) {
+          get().setConfig({ backupDirs: [...config.backupDirs, config.backupDir] });
+          await get().saveConfig();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to perform backup:', error);
+      set({ status: '备份失败' });
+    }
+  },
+
+  restoreBackup: async (backup: BackupInfo) => {
+    try {
+      const { config } = get();
+      set({ status: '正在还原...' });
+      const res = await fetch('/api/files/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          backupPath: backup.backupPath,
+          originalPath: backup.original,
+          isDirectory: backup.isDirectory,
+          backupDir: config.backupDir
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        set({ status: '还原成功！' });
+        await get().loadLogs();
+      }
+    } catch (error) {
+      console.error('Failed to restore backup:', error);
+      set({ status: '还原失败' });
+    }
+  },
+
+  deleteBackup: async (backup: BackupInfo) => {
+    try {
+      const { config } = get();
+      set({ status: '正在删除...' });
+      const res = await fetch('/api/files/backup', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          backupPath: backup.backupPath,
+          backupDir: config.backupDir
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        set({ status: '删除成功！' });
+        await get().loadBackups();
+        await get().loadLogs();
+      }
+    } catch (error) {
+      console.error('Failed to delete backup:', error);
+      set({ status: '删除失败' });
+    }
+  },
+
+  toggleAutoBackup: () => {
+    const { isAutoBackupRunning, config, performBackup } = get();
+    if (isAutoBackupRunning) {
+      set({ isAutoBackupRunning: false, status: '自动备份已停止' });
+    } else {
+      if (!config.sourcePath || !config.backupDir) {
+        set({ status: '请先选择源文件和备份目录' });
+        return;
+      }
+      set({ isAutoBackupRunning: true, status: '自动备份已启动' });
+    }
+  },
+
+  setStatus: (status) => set({ status })
+}));
+
