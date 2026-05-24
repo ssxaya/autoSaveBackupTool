@@ -41,7 +41,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const res = await fetch('/api/config');
       const data = await res.json();
-      set({ config: data });
+      // 确保所有必要字段都有默认值
+      set({ 
+        config: {
+          sourcePath: data.sourcePath || '',
+          isDirectory: data.isDirectory || false,
+          backupDir: data.backupDir || '',
+          backupDirs: data.backupDirs || [],
+          interval: data.interval || 5
+        } 
+      });
     } catch (error) {
       console.error('Failed to load config:', error);
     }
