@@ -1,0 +1,59 @@
+electron-app/
+├── backend/                          # Python 后端（核心业务逻辑）
+│   ├── __init__.py
+│   ├── server.py                    # 服务入口
+│   └── core/
+│       ├── __init__.py
+│       └── backup.py                # 备份核心逻辑
+│
+├── src/
+│   ├── main/                        # Electron 主进程
+│   │   └── main.ts                 # 窗口管理、IPC 通信
+│   │
+│   ├── preload/                     # 预加载脚本
+│   │   └── preload.ts             # 安全桥梁
+│   │
+│   ├── renderer/                    # React 前端
+│   │   ├── components/             # UI 组件（模块化）
+│   │   │   ├── Announcement.tsx/css      # 公告栏
+│   │   │   ├── AnnouncementDialog.tsx/css
+│   │   │   ├── FileSettings.tsx/css      # 文件设置
+│   │   │   ├── BackupSettings.tsx/css     # 备份设置
+│   │   │   ├── BackupList.tsx/css         # 备份列表
+│   │   │   ├── LogViewer.tsx/css          # 日志查看
+│   │   │   ├── StatusBar.tsx/css          # 状态栏
+│   │   │   └── index.ts                  # 导出
+│   │   │
+│   │   ├── hooks/                 # 业务逻辑 Hooks
+│   │   │   └── useBackup.ts
+│   │   │
+│   │   ├── services/              # API 调用层
+│   │   │   └── api.ts
+│   │   │
+│   │   ├── types/                 # TypeScript 类型
+│   │   │   ├── index.ts
+│   │   │   └── electron.d.ts
+│   │   │
+│   │   ├── App.tsx/css            # 主应用组件
+│   │   ├── main.tsx               # 入口
+│   │   └── index.css              # 全局样式
+│   │
+│   └── types/
+│       ├── index.ts
+│       └── electron.d.ts
+│
+├── build/                           # 构建资源
+├── dist/                           # 前端构建输出
+├── dist-electron/                  # Electron 构建输出
+├── release/                        # 打包输出
+│
+├── package.json                    # 依赖配置
+├── tsconfig.json                   # TypeScript 配置
+├── vite.config.ts                  # Vite 配置
+├── electron-builder.yml           # 打包配置
+├── .npmrc                         # NPM 配置
+│
+├── README.md                      # 项目说明
+├── QUICKSTART.md                  # 快速开始
+├── install.sh                     # Linux/macOS 安装脚本
+└── install.bat                    # Windows 安装脚本

@@ -1,0 +1,39 @@
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 15px;
+  background: #f5f5f5;
+  border-top: 1px solid #ddd;
+  border-radius: 0 0 8px 8px;
+}
+
+.status-message {
+  color: #666;
+  font-size: 13px;
+}
+
+.status-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.log-btn {
+  padding: 6px 12px;
+  background: #9E9E9E;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.log-btn:hover {
+  background: #757575;
+}
+
+.version {
+  color: #999;
+  font-size: 12px;
+}
