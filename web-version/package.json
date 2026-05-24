@@ -1,0 +1,34 @@
+{
+  "name": "auto-save-backup-tool",
+  "version": "1.0.0",
+  "description": "ASBT - 自动存档备份工具 Web版本",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win"
+  },
+  "keywords": ["backup", "auto-save", "tool"],
+  "author": "Yanxiao",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.yanxiao.autoSaveBackupTool",
+    "productName": "ASBT-自动存档备份工具",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "portable",
+      "icon": "icon.ico"
+    },
+    "files": [
+      "**/*",
+      "!dist/**",
+      "!node_modules/.cache/**"
+    ]
+  }
+}
