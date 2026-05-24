@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Folder, File, ChevronLeft, ChevronRight, Home } from 'lucide-react';
+import { apiGet } from '../utils/api';
 
 interface FileSelectorProps {
   onSelect: (path: string, isDirectory: boolean) => void;
@@ -33,8 +34,11 @@ export const FileSelector: React.FC<FileSelectorProps> = ({
     try {
       setLoading(true);
       const url = path ? `/api/files/list?path=${encodeURIComponent(path)}` : '/api/files/list';
-      const res = await fetch(url);
-      const data = await res.json();
+      const data = await apiGet<{
+        files: FileItem[],
+        currentPath: string,
+        homePath: string
+      }>(url);
       setCurrentPath(data.currentPath);
       setFiles(data.files);
       setHomePath(data.homePath);

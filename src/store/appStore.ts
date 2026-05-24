@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { GlobalConfig, BackupInfo, LogEntry, Announcement } from '../../shared/types';
+import { apiGet, apiPost, apiDelete } from '../utils/api';
 
 interface AppState {
   config: GlobalConfig;
@@ -39,9 +40,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   loadConfig: async () => {
     try {
-      const res = await fetch('/api/config');
-      const data = await res.json();
-      // 确保所有必要字段都有默认值
+      const data = await apiGet<GlobalConfig>('/api/config');
       set({ 
         config: {
           sourcePath: data.sourcePath || '',
@@ -59,11 +58,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   saveConfig: async () => {
     try {
       const { config } = get();
-      await fetch('/api/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
-      });
+      await apiPost('/api/config', config);
     } catch (error) {
       console.error('Failed to save config:', error);
     }
@@ -76,8 +71,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ backups: [] });
         return;
       }
-      const res = await fetch(`/api/files/backups?backupDir=${encodeURIComponent(config.backupDir)}`);
-      const data = await res.json();
+      const data = await apiGet<{ backups: BackupInfo[] }>(`/api/files/backups?backupDir=${encodeURIComponent(config.backupDir)}`);
       set({ backups: data.backups.reverse() });
     } catch (error) {
       console.error('Failed to load backups:', error);
@@ -91,8 +85,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ logs: [] });
         return;
       }
-      const res = await fetch(`/api/files/logs?backupDir=${encodeURIComponent(config.backupDir)}`);
-      const data = await res.json();
+      const data = await apiGet<{ logs: LogEntry[] }>(`/api/files/logs?backupDir=${encodeURIComponent(config.backupDir)}`);
       set({ logs: data.logs.reverse() });
     } catch (error) {
       console.error('Failed to load logs:', error);
@@ -101,8 +94,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   loadAnnouncements: async () => {
     try {
-      const res = await fetch('/api/config/announcements');
-      const data = await res.json();
+      const data = await apiGet<Announcement[]>('/api/config/announcements');
       set({ announcements: data });
     } catch (error) {
       console.error('Failed to load announcements:', error);
@@ -117,16 +109,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         return;
       }
       set({ status: '正在备份...' });
-      const res = await fetch('/api/files/backup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sourcePath: config.sourcePath,
-          backupDir: config.backupDir,
-          isDirectory: config.isDirectory
-        })
+      const data = await apiPost<{ success: boolean; backupInfo: BackupInfo }>('/api/files/backup', {
+        sourcePath: config.sourcePath,
+        backupDir: config.backupDir,
+        isDirectory: config.isDirectory
       });
-      const data = await res.json();
       if (data.success) {
         set({ status: '备份成功！' });
         await get().loadBackups();
@@ -147,17 +134,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const { config } = get();
       set({ status: '正在还原...' });
-      const res = await fetch('/api/files/restore', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          backupPath: backup.backupPath,
-          originalPath: backup.original,
-          isDirectory: backup.isDirectory,
-          backupDir: config.backupDir
-        })
+      const data = await apiPost<{ success: boolean }>('/api/files/restore', {
+        backupPath: backup.backupPath,
+        originalPath: backup.original,
+        isDirectory: backup.isDirectory,
+        backupDir: config.backupDir
       });
-      const data = await res.json();
       if (data.success) {
         set({ status: '还原成功！' });
         await get().loadLogs();
@@ -172,15 +154,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const { config } = get();
       set({ status: '正在删除...' });
-      const res = await fetch('/api/files/backup', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          backupPath: backup.backupPath,
-          backupDir: config.backupDir
-        })
+      const data = await apiDelete<{ success: boolean }>('/api/files/backup', {
+        backupPath: backup.backupPath,
+        backupDir: config.backupDir
       });
-      const data = await res.json();
       if (data.success) {
         set({ status: '删除成功！' });
         await get().loadBackups();

@@ -1,16 +1,51 @@
 {
-  "name": "workspace",
+  "name": "asbt-backup-tool",
+  "version": "1.0.0",
+  "description": "自动存档备份工具 - Web 版本",
+  "main": "dist-electron/main.js",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
+  "author": "Your Name",
+  "license": "MIT",
   "scripts": {
-    "client:dev": "vite",
+    "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "check": "tsc --noEmit",
-    "server:dev": "nodemon",
-    "dev": "concurrently \"npm run client:dev\" \"npm run server:dev\""
+    "electron:dev": "vite",
+    "electron:build": "tsc -b && vite build && electron-builder",
+    "electron:preview": "vite build && electron .",
+    "electron:dist": "vite build && electron-builder --publish=never"
+  },
+  "build": {
+    "appId": "com.asbt.backup-tool",
+    "productName": "ASBT - 自动存档备份工具",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "public/favicon.svg"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -36,6 +71,8 @@
     "autoprefixer": "^10.4.21",
     "babel-plugin-react-dev-locator": "^1.0.0",
     "concurrently": "^9.2.0",
+    "electron": "^42.2.0",
+    "electron-builder": "^26.8.1",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
@@ -47,6 +84,8 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",
     "vite": "^6.3.5",
+    "vite-plugin-electron": "^0.29.1",
+    "vite-plugin-electron-renderer": "^0.14.7",
     "vite-plugin-trae-solo-badge": "^1.0.0",
     "vite-tsconfig-paths": "^5.1.4"
   }
