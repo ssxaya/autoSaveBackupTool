@@ -8,7 +8,9 @@
   "author": "Your Name",
   "license": "MIT",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"npm run client:dev\" \"npm run server:dev\"",
+    "client:dev": "vite",
+    "server:dev": "nodemon",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
