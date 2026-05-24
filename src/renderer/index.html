@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>ASBT</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <div class="announcement-bar">
+      <div class="announcement-scroll-wrapper">
+        <div class="announcement-text" id="announcementText"></div>
+      </div>
+      <button class="btn btn-sm" id="btnShowAnnouncements">查看公告</button>
+    </div>
+
+    <fieldset class="section">
+      <legend>存档文件设置</legend>
+      <div class="form-row">
+        <label>源文件/文件夹:</label>
+        <input type="text" id="sourcePath" readonly>
+        <button class="btn" id="btnSelectFile">选择文件</button>
+        <button class="btn" id="btnSelectDir">选择文件夹</button>
+      </div>
+      <div class="form-row">
+        <label>备份目录:</label>
+        <input type="text" id="backupDir" readonly>
+        <button class="btn" id="btnBrowse">浏览</button>
+        <button class="btn" id="btnHistoryDirs">历史备份目录</button>
+      </div>
+    </fieldset>
+
+    <fieldset class="section">
+      <legend>备份设置</legend>
+      <div class="form-row">
+        <label>备份间隔(分钟):</label>
+        <input type="number" id="intervalInput" min="1" max="1440" value="5">
+        <button class="btn btn-primary" id="btnManualBackup">立即备份</button>
+        <button class="btn btn-accent" id="btnToggleAuto">开始自动备份</button>
+      </div>
+    </fieldset>
+
+    <fieldset class="section section-grow">
+      <legend>备份历史</legend>
+      <div class="table-wrapper">
+        <table id="backupTable">
+          <thead>
+            <tr>
+              <th class="col-time">时间</th>
+              <th class="col-name">文件名</th>
+            </tr>
+          </thead>
+          <tbody id="backupListBody"></tbody>
+        </table>
+      </div>
+    </fieldset>
+
+    <div class="bottom-bar">
+      <span class="status-bar" id="statusBar">准备就绪</span>
+      <button class="btn btn-sm" id="btnShowLogs">查看日志</button>
+    </div>
+  </div>
+
+  <div class="context-menu" id="backupContextMenu">
+    <div class="context-menu-item" data-action="restore">还原</div>
+    <div class="context-menu-item" data-action="delete">删除</div>
+    <div class="context-menu-separator"></div>
+    <div class="context-menu-item" data-action="deleteFolder">删除备份文件夹</div>
+  </div>
+
+  <div class="context-menu" id="logContextMenu">
+    <div class="context-menu-item" data-action="viewStatus">状态</div>
+    <div class="context-menu-item" data-action="rollback">回溯</div>
+  </div>
+
+  <div class="context-menu" id="dirContextMenu">
+    <div class="context-menu-item" data-action="viewDirInfo">状态</div>
+    <div class="context-menu-separator"></div>
+    <div class="context-menu-item" data-action="removeFromHistory">从历史中删除</div>
+    <div class="context-menu-item" data-action="deleteBackupFolder">删除备份文件夹</div>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modalContainer">
+      <div class="modal-header">
+        <span class="modal-title" id="modalTitle"></span>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer" id="modalFooter"></div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

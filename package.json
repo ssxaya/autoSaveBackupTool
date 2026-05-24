@@ -1,0 +1,12 @@
+{
+  "name": "auto-save-backup-tool",
+  "version": "1.0.0",
+  "description": "自动存档备份工具 - Electron版",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}
